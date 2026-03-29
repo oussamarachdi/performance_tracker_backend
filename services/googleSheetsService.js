@@ -24,6 +24,12 @@ try {
             : potentialJson;
 
         finalCredentials = JSON.parse(cleanJson);
+
+        // Ensure private_key has actual newlines (not literal \n strings)
+        if (finalCredentials.private_key) {
+            finalCredentials.private_key = finalCredentials.private_key.replace(/\\n/g, '\n');
+        }
+
         source = 'environment variable';
     }
 
