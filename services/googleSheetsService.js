@@ -6,19 +6,38 @@ const SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly'];
 // Helper to initialize auth safely
 let auth;
 try {
-    const credentialsJson = process.env.GOOGLE_SERVICE_ACCOUNT || process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
-    const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS || './mkt-tracker.json';
+    // Collect potential credential sources
+    const serviceAccountJson = process.env.GOOGLE_SERVICE_ACCOUNT;
+    const credsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
+    const credsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
 
-    if (credentialsJson) {
-        console.log('Using Google Service Account from environment variable.');
+    // Check if any of these look like the actual JSON content
+    let finalCredentials = null;
+    let source = '';
+
+    const potentialJson = [serviceAccountJson, credsJson, credsPath].find(val => val && (val.includes('{') || val.includes('service_account')));
+
+    if (potentialJson) {
+        // Strip out any accidental prefix if the user pasted "VAR_NAME=JSON"
+        const cleanJson = potentialJson.includes('=') && potentialJson.indexOf('{') > potentialJson.indexOf('=')
+            ? potentialJson.substring(potentialJson.indexOf('{'))
+            : potentialJson;
+
+        finalCredentials = JSON.parse(cleanJson);
+        source = 'environment variable';
+    }
+
+    if (finalCredentials) {
+        console.log(`Using Google Service Account from ${source}.`);
         auth = new google.auth.GoogleAuth({
-            credentials: JSON.parse(credentialsJson),
+            credentials: finalCredentials,
             scopes: SCOPES,
         });
     } else {
-        console.log(`Using Google Service Account from file: ${credentialsPath}`);
+        const path = credsPath || './mkt-tracker.json';
+        console.log(`Using Google Service Account from file: ${path}`);
         auth = new google.auth.GoogleAuth({
-            keyFile: credentialsPath,
+            keyFile: path,
             scopes: SCOPES,
         });
     }
