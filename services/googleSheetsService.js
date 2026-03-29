@@ -3,11 +3,12 @@ require('dotenv').config();
 
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly'];
 
-// Using the credentials path from .env or defaulting to root
+// Prioritize JSON string from environment variable (for Cloud deployments)
+const credentialsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
 const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS || './mkt-tracker.json';
 
 const auth = new google.auth.GoogleAuth({
-    keyFile: credentialsPath,
+    ...(credentialsJson ? { credentials: JSON.parse(credentialsJson) } : { keyFile: credentialsPath }),
     scopes: SCOPES,
 });
 
